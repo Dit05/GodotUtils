@@ -22,7 +22,7 @@
 
   <PropertyGroup>
     <PackageId>DitoDisco.Godot</PackageId>
-    <Version>0.1.3</Version>
+    <Version>0.1.4</Version>
     <Authors>Dit05</Authors>
     <Product>DitoDisco Godot Utilities and Extensions</Product>
     <Description>

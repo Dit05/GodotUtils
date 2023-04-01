@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--<ItemGroup>
+    <Reference Include="GodotSharp">
+      <HintPath>GodotSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>-->
+
+  <ItemGroup>
+    <PackageReference Include="GodotSharp" Version="4.0.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Missing XML comment for publicly visible type or member -->
+    <NoWarn>$(NoWarn);1573</NoWarn> <!-- Parameter has no matching param tag in the XML comment -->
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>DitoDisco.Godot</PackageId>
+    <Version>0.1.2</Version>
+    <Authors>Dit05</Authors>
+    <Product>DitoDisco Godot Utilities and Extensions</Product>
+    <Description>
+      Adds various Godot-related utilities and extension methods.
+    </Description>
+  </PropertyGroup>
+
+</Project>

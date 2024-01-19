@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>DitoDisco.Godot</PackageId>
+    <PackageId>DitoDisco.GodotUtils</PackageId>
     <PackageTags></PackageTags>
     <Version>0.1.4</Version>
     <Authors>Dit05</Authors>

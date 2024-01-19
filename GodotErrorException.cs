@@ -2,7 +2,7 @@ using System;
 using Godot;
 
 
-namespace DitoDisco.Godot {
+namespace DitoDisco.GodotUtils {
 
     /// <summary>
     /// Can be thrown when the result of an operation isn't <see cref="Error.Ok"/>.

@@ -7,7 +7,7 @@ using GodotModeFlags=global::Godot.FileAccess.ModeFlags;
 using FileAccess=global::Godot.FileAccess;
 using DirAccess=global::Godot.DirAccess;
 
-namespace DitoDisco.Godot {
+namespace DitoDisco.GodotUtils {
 
     /// <summary>
     /// Wraps <see cref="FileAccess"/> as a <see cref="System.IO.Stream"/>.

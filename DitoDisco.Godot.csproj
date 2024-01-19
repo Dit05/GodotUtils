@@ -1,13 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!--<ItemGroup>
-    <Reference Include="GodotSharp">
-      <HintPath>GodotSharp.dll</HintPath>
-    </Reference>
-  </ItemGroup>-->
-
   <ItemGroup>
-    <PackageReference Include="GodotSharp" Version="4.0.0-beta.10" />
+    <PackageReference Include="GodotSharp" Version="4.2" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -22,12 +16,14 @@
 
   <PropertyGroup>
     <PackageId>DitoDisco.Godot</PackageId>
+    <PackageTags></PackageTags>
     <Version>0.1.4</Version>
     <Authors>Dit05</Authors>
-    <Product>DitoDisco Godot Utilities and Extensions</Product>
     <Description>
       Adds various Godot-related utilities and extension methods.
     </Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Dit05/DitoDisco.REPLACEME</PackageProjectUrl>
   </PropertyGroup>
 
 </Project>

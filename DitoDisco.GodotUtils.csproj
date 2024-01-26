@@ -21,7 +21,7 @@
   <PropertyGroup>
     <PackageId>DitoDisco.GodotUtils</PackageId>
     <PackageTags></PackageTags>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Authors>Dit05</Authors>
     <Description>
       Adds various Godot-related utilities and extension methods.

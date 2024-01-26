@@ -22,6 +22,7 @@
     <Description>
       Adds various Godot-related utilities and extension methods.
     </Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Dit05/DitoDisco.REPLACEME</PackageProjectUrl>
   </PropertyGroup>

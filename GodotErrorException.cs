@@ -13,13 +13,15 @@ namespace DitoDisco.GodotUtils {
 
         public override string Message => $"A Godot.Error has occurred: {Error}";
 
+        /// <param name="error">May not be <see cref="Error.Ok"/>.</param>
         public GodotErrorException(Error error) {
+            if(error == Error.Ok) throw new ArgumentOutOfRangeException(nameof(error), $"'{nameof(error)}' must not be '{Error.Ok}'.");
             this.Error = error;
         }
 
 
         /// <summary>
-        /// Throws a <see cref="GodotErrorException"/> when the argument expression is not <see cref="Error.Ok"/>, otherwise does nothing.
+        /// Throws a <see cref="GodotErrorException"/> when the argument is not <see cref="Error.Ok"/>, otherwise does nothing.
         /// </summary>
         public static void ThrowIfNotOk(Error err) {
             if(err != Error.Ok) {

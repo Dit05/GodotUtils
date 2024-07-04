@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using GodotModeFlags=Godot.FileAccess.ModeFlags;
 
 
@@ -13,14 +14,18 @@ namespace DitoDisco.GodotUtils {
         /// Throws a <see cref="FileNotFoundException"/> when <see cref="Godot.FileAccess.FileExists(string)"/> says <paramref name="path"/> doesn't exist.
         /// </summary>
         static void EnsureFileExists(string path) {
-            if(!Godot.FileAccess.FileExists(path))
-                throw new FileNotFoundException("File not found.", path);
+            if(!Godot.FileAccess.FileExists(path)) {
+                throw new FileNotFoundException("File did not exist.", path);
+            }
         }
 
         /// <summary>
-        /// Parses a .tres file to determine what kind of resource it is, and returns it as a string, ie: Material, World3D, FontFile, or Resource for custom types. Returns null on failure, like when the file is not a resource.
+        /// Extracts the key-value pairs from the part of a .tres file that goes [gd_resource (...)].
         /// </summary>
-        public static string? DetermineResourceTypeName(string path) {
+        public static IEnumerable<KeyValuePair<string, string>> ParseResourceHeader(string path) {
+            [DoesNotReturn]
+            void die(string msg) => throw new ResourceParseException(msg, path);
+
             EnsureFileExists(path);
 
             // Yay, file parsing time!
@@ -28,108 +33,165 @@ namespace DitoDisco.GodotUtils {
 
             // Get the first non-whitespace line
             using(var reader = new StreamReader(new GodotFileStream(path, GodotModeFlags.Read))) {
-                // FIXME safety
-                while(true) {
+                int safety1 = 10_000;
+                while(safety1-- > 0) {
                     int what = reader.Read();
-                    if(what == -1) return null;
+                    if(what == -1) die("Reached EoF without ever finding anything other than whitespace.");
                     char ch = (char)what;
 
                     if(char.IsWhiteSpace(ch)) continue;
-                    else if(ch != '[') return null;
+                    else if(ch != '[') die("Expected to find '[' as the first non-whitespace character.");
                     else break;
                 }
 
+                if(safety1 <= 0) {
+                    die("File starts with an excessive amount of whitespace.");
+                }
+
                 line = reader.ReadLine();
-                if(line == null) return null;
+                if(line == null) die("Expected more characters after the '['.");
             }
 
 
             int charsLeft = line.LastIndexOf(']');
-
             int parseIndex = 0;
 
-            bool advance(ref int index) {
-                if(charsLeft <= 0) return false;
+            void expect(string str) {
+                void _die() => die($"Expected \"{str}\" at index {parseIndex} of the first non-whitespace line.");
+                if(charsLeft < str.Length) _die();
+
+                for(int i = 0; i < str.Length; i++) {
+                    if(line[parseIndex] != str[i]) _die();
+                    parseIndex++;
+                }
                 charsLeft--;
-
-                index++;
-                return true;
             }
 
-            const string PREAMBLE = "gd_resource ";
-            for(int i = 0; i < PREAMBLE.Length; i++) {
-                if(!advance(ref parseIndex) || line[parseIndex] != PREAMBLE[i]) return null;
-            }
-
-            bool next_kvp(out string key, out string value) {
-                // Parse index at start of kvp
-
-                int equalsI = parseIndex;
-                while(true) {
-                    if(!advance(ref equalsI)) goto fail;
-                    if(line[equalsI] == '=') break;
+            void eat_whitespace() {
+                while(charsLeft > 0 && char.IsWhiteSpace(line[parseIndex])) {
+                    parseIndex++;
+                    charsLeft--;
                 }
+            }
 
-                int startQuoteI = equalsI;
-                if(!advance(ref startQuoteI) || line[startQuoteI] != '"') goto fail;
+            int next_ch() {
+                if(charsLeft > 0) {
+                    charsLeft--;
+                    char ch = line[parseIndex];
+                    parseIndex++;
+                    return ch;
+                } else {
+                    return -1;
+                }
+            }
 
-                int endQuoteI = startQuoteI;
-                bool escaping = false;
-                bool done = false;
-                while(!done) {
-                    if(!advance(ref endQuoteI)) goto fail;
+            string cut(int start, int untilExcl) {
+                return line.Substring(startIndex: start, length: untilExcl - start);
+            }
 
-                    if(!escaping) {
-                        char ch = line[endQuoteI];
+            expect("gd_resource");
+            eat_whitespace();
 
-                        if(ch == '"') {
-                            break;
-                        } else if(ch == '\\') {
-                            escaping = true;
+            // Stupid state machine
+            const int STATE_KEY = 1;
+            const int STATE_VALUE = 2;
+            const int STATE_VALUE_ESCAPING = 3;
+
+            int state = STATE_KEY;
+            int keyStart = parseIndex;
+            int keyEnd = -1;
+            int valueStart = -1;
+
+            int safety2 = 1_000_000;
+            while(safety2-- > 0) {
+                switch(state) {
+
+                    case STATE_KEY:{
+                        int ch = next_ch();
+                        if(ch == -1) die("Expected '=' after key.");
+
+                        char cch = (char)ch;
+                        bool over = (cch == '=' || char.IsWhiteSpace(cch));
+
+                        if(over) {
+                            keyEnd = parseIndex;
+
+                            eat_whitespace();
+                            expect("=");
+                            eat_whitespace();
+                            expect("\"");
+                            valueStart = parseIndex;
+                            state = STATE_VALUE;
                         }
-                    } else {
-                        escaping = false;
-                    }
+                    }break;
+
+                    case STATE_VALUE:{
+                        int ch = next_ch();
+                        if(ch == -1) die("Expected '\"' to close a value.");
+
+                        char cch = (char)ch;
+                        // The .tres format better not have escaping more complicated than this.
+                        if(cch == '\\') {
+                            state = STATE_VALUE_ESCAPING;
+                            break;
+                        }
+
+                        if(cch == '"') {
+                            yield return new KeyValuePair<string, string>(cut(keyStart, keyEnd), cut(valueStart, parseIndex));
+                            next_ch();
+                            eat_whitespace();
+
+                            if(cch == ']') {
+                                yield break; // Done
+                            }
+                            keyStart = parseIndex;
+                            state = STATE_KEY;
+                        }
+                    }break;
+
+                    case STATE_VALUE_ESCAPING:{
+                        int ch = next_ch();
+                        if(ch == -1) die("Expected a character to be escaped.");
+                        state = STATE_VALUE;
+                    }break;
+
                 }
-
-                key = line.Substring(parseIndex, equalsI - parseIndex);
-                value = line.Substring(startQuoteI + 1, endQuoteI - startQuoteI - 1);
-
-                return true;
-            fail:
-                key = string.Empty;
-                value = string.Empty;
-                return false;
             }
 
-
-            // Go through the key-value pairs (key=value key=value key=value)
-            while(next_kvp(out string key, out string value)) {
-                if(key == "type") return value;
-            }
-
-            // None of the keys were "type".
-            return null;
+            die("The resource tag has too much text.");
         }
 
 
-        private static readonly System.Reflection.Assembly _resourcesAssembly = typeof(Resource).Assembly;
+        /// <summary>
+        /// Attempts to parse a .tres serialized resource file to determine what kind of resource it is, and returns it as a string, ie: Material, World3D, FontFile, or Resource for custom types. Returns null on failure, like when the file is not a resource.
+        /// </summary>
+        public static string GuessResourceTypeName(string path) {
+            foreach(KeyValuePair<string, string> kvp in ParseResourceHeader(path)) {
+                if(kvp.Key == "type") {
+                    return kvp.Value;
+                }
+            }
+
+            throw new ResourceParseException("None of the resource header key-value pairs indicated the type of the resource.", path);
+        }
+
+        private static readonly System.Reflection.Assembly resourcesAssembly = typeof(Resource).Assembly;
 
         /// <summary>
-        /// Determines what kind kind of <see cref="Resource"/> a .tres file is. Returns null if the file is not a resource, and just Resource for custom resources.
+        /// Attempts to determine what kind of <see cref="Resource"/> a .tres file is. Returns <see cref="Resource"/> for custom resources.
         /// </summary>
-        public static Type? DetermineResourceType(string path) {
-            string? typeName = DetermineResourceTypeName(path);
-            if(typeName == null)
-                return null;
+        public static Type GuessResourceType(string path) {
+            string typeName = GuessResourceTypeName(path);
 
-            Type? type = _resourcesAssembly.GetType($"{nameof(GodotSharp)}.{typeName}");
+            Type? type = resourcesAssembly.GetType($"{nameof(GodotSharp)}.{typeName}");
             if(typeof(Resource).IsAssignableFrom(type)) {
                 return type;
             } else {
-                return null;
+                throw new ResourceParseException($"There's no type named '{typeName}' in the assembly '{resourcesAssembly.GetName()}'.", path);
             }
         }
+
+
 
         static string Slashify(string path) => path.EndsWith("/") ? path : path + '/';
 
@@ -137,21 +199,19 @@ namespace DitoDisco.GodotUtils {
         /// Produces the names of all the entries in the directory <paramref name="path"/>.
         /// </summary>
         public static IEnumerable<string> EnumerateDirectoryEntries(string path, bool includeHidden = true) {
-            DirAccess dir = DirAccess.Open(path);
+            DirAccess? dir = DirAccess.Open(path);
             if(dir is null) {
                 throw new Exception(DirAccess.GetOpenError().ToString());
             }
 
             dir.IncludeNavigational = false;
             dir.IncludeHidden = includeHidden;
-            dir.ListDirBegin();
+            GodotErrorException.ThrowIfNotOk(dir.ListDirBegin());
 
             while(true) {
                 string entry = dir.GetNext();
-                if(entry == string.Empty)
-                    break;
-
-                yield return entry;
+                if(entry == string.Empty) break;
+                else yield return entry;
             }
 
             dir.ListDirEnd();
@@ -162,7 +222,7 @@ namespace DitoDisco.GodotUtils {
         /// Produces the paths of all the files in the directory <paramref name="startPath"/> and its subdirectories. Moves breadth-first to save on directory changes (they're calls to Godot).
         /// </summary>
         public static IEnumerable<string> RecursivelyEnumerateFilePaths(string startPath, bool includeHidden = true) {
-            DirAccess dir = DirAccess.Open(startPath);
+            DirAccess? dir = DirAccess.Open(startPath);
             if(dir is null) {
                 throw new Exception(DirAccess.GetOpenError().ToString());
             }

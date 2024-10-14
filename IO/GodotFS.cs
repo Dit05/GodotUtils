@@ -183,7 +183,7 @@ namespace DitoDisco.GodotUtils {
         public static Type GuessResourceType(string path) {
             string typeName = GuessResourceTypeName(path);
 
-            Type? type = resourcesAssembly.GetType($"{nameof(GodotSharp)}.{typeName}");
+            Type? type = resourcesAssembly.GetType($"{nameof(Godot)}.{typeName}");
             if(typeof(Resource).IsAssignableFrom(type)) {
                 return type;
             } else {

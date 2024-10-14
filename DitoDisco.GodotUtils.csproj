@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="GodotSharp" Version="4.2.*" />
+    <PackageReference Include="GodotSharp" Version="4.3.*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,7 +21,7 @@
   <PropertyGroup>
     <PackageId>DitoDisco.GodotUtils</PackageId>
     <PackageTags></PackageTags>
-    <Version>4.2</Version>
+    <Version>4.3</Version>
     <Authors>Dit05</Authors>
     <Description>
       Adds various Godot-related utilities and extension methods.

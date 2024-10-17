@@ -1,0 +1,9 @@
+[tag field="1" other_field="value"]
+property = 2
+OtherProperty = "strings have
+unescaped \"TABS\" and NEWLINES!!! backslash: \\
+
+"
+"pr[0]perty with weird n@me" = Something("text", 3, true)
+
+[potential_tag_with_no_fields_or_properties]

@@ -7,7 +7,7 @@ using Godot;
 
 namespace DitoDisco.GodotUtils {
 
-    [Obsolete]
+    [Obsolete("Parsing resources is no longer in the scope of the project for now")]
     public static class ResourceParser {
 
         private static readonly System.Reflection.Assembly resourcesAssembly = typeof(Resource).Assembly;
